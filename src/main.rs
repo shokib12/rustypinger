@@ -29,7 +29,6 @@ fn main() {
 
     let target = args[1].parse::<Ipv4Addr>().expect("Invalid IP address");
 
-    // Wrap IpNextHeaderProtocols::Icmp inside TransportProtocol::Ipv4
     let protocol = Layer4(TransportProtocol::Ipv4(IpNextHeaderProtocols::Icmp));
     let (mut tx, mut rx) = transport_channel(1024, protocol).expect("Failed to create transport channel");
 
