@@ -42,23 +42,33 @@ fn main() {
         tx.send_to(EchoRequestPacket::new(&icmp_packet).unwrap(), std::net::IpAddr::V4(target))
             .expect("Failed to send packet");
 
+        // Setting up the iterator
         let mut iter = icmp_packet_iter(&mut rx);
 
-        match iter.next_with_timeout(Duration::from_secs(1)) {
-            Ok(Some((packet, addr))) => {
+        let mut received = false;
+
+        // check if the response arrives within the 1 second timeout
+        let timeout = Duration::from_secs(1);
+        while now.elapsed() < timeout {
+            if let Ok((packet, addr)) = iter.next() {
                 if let Some(reply) = EchoReplyPacket::new(packet.packet()) {
                     if reply.get_icmp_type() == IcmpTypes::EchoReply {
                         let elapsed = now.elapsed();
-                        println!("Reply from {}: seq={} time={}ms", addr, reply.get_sequence_number(), elapsed.as_millis());
+                        println!(
+                            "Reply from {}: seq={} time={}ms",
+                            addr,
+                            reply.get_sequence_number(),
+                            elapsed.as_millis()
+                        );
+                        received = true;
+                        break;
                     }
                 }
             }
-            Ok(None) => {
-                println!("Request timed out.");
-            }
-            Err(e) => {
-                println!("Error: {}", e);
-            }
+        }
+
+        if !received {
+            println!("Request timed out.");
         }
 
         sequence_number += 1;
